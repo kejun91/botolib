@@ -88,6 +88,12 @@ class DynamoDB(AWSService):
         '''
         return self.get_result_from_paginator('list_tables', 'TableNames')
     
+    def put_item(self, table_name, item):
+        return self.client.put_item(
+            TableName = table_name,
+            Item = python_type_to_dynamodb_type(item)
+        )
+    
 def _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, key_condition_expression, filter_expression, selected_attributes):
     kwargs = {
         "TableName":table_name,
