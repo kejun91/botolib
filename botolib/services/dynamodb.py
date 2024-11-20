@@ -54,10 +54,13 @@ class DynamoDB(AWSService):
     def scan_with_paginator(self, table_name, index_name = None, filter_expression:ConditionBase = None, select = None, selected_attributes = None, callback_handler = None):
         kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, None, filter_expression, selected_attributes)
 
-        def convert_and_callback(items):
-            callback_handler(dynamodb_type_to_python_type(items))
+        if callback_handler is not None:
+            def convert_and_callback(items):
+                callback_handler(dynamodb_type_to_python_type(items))
 
-        return self.get_result_from_paginator('scan', 'Items', convert_and_callback, **kwargs)
+            return self.get_result_from_paginator('scan', 'Items', convert_and_callback, **kwargs)
+        else:
+            return dynamodb_type_to_python_type(self.get_result_from_paginator('scan', 'Items', None, **kwargs))
     
     def execute_partiql_with_custom_paginator(self, partiql_statement, callback_handler = None, next_token = None):
         return self._get_all_with_callback(self.execute_partiql, 'Items', 'NextToken', callback_handler, partiql_statement, next_token = next_token)
@@ -93,6 +96,33 @@ class DynamoDB(AWSService):
             TableName = table_name,
             Item = python_type_to_dynamodb_type(item)
         )
+    
+    def update_item(self, table_name, key, update_attribute_values):
+        update_expressions, names, values = get_update_expression_attributes(update_attribute_values)
+
+        return self.client.update_item(
+            TableName=table_name,
+            Key=python_type_to_dynamodb_type(key),
+            UpdateExpression = "SET " + ", ".join(update_expressions),
+            ExpressionAttributeNames = names,
+            ExpressionAttributeValues = values,
+            ReturnValues="UPDATED_NEW"
+        ).get("Attributes")
+
+def get_update_expression_attributes(attribute_values, expression_callback = lambda name, value: f"{name} = {value}"):
+    i = 0
+    expression_attribute_names = {}
+    expression_attribute_values = {}
+    expressions = []
+    for n, v in attribute_values.items():
+        n_alias = f'#name{i}'
+        v_alias = f':value{i}'
+        i = i + 1
+        expressions.append(expression_callback(n_alias,v_alias))
+        expression_attribute_names.update({n_alias:n})
+        expression_attribute_values.update({v_alias:v})
+    
+    return expressions, expression_attribute_names, expression_attribute_values
     
 def _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, key_condition_expression, filter_expression, selected_attributes):
     kwargs = {

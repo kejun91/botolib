@@ -22,4 +22,6 @@ class S3(AWSService):
         parts = s3_path.removeprefix('/').split('/',1)
         bucket_name = parts[0]
         key_name = parts[1] if len(parts) > 1 else ""
-        return self.client.get_object(Bucket=bucket_name, Key=key_name)
+
+        response = self.client.get_object(Bucket=bucket_name, Key=key_name)
+        return response["Body"].read()
