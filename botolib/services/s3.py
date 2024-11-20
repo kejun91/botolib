@@ -1,4 +1,4 @@
-from .. import AWSService
+from . import AWSService
 from ..utils.common import remove_none_values
 
 
