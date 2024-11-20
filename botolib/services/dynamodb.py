@@ -98,7 +98,7 @@ class DynamoDB(AWSService):
         )
     
     def update_item(self, table_name, key, update_attribute_values):
-        update_expressions, names, values = get_update_expression_attributes(update_attribute_values)
+        update_expressions, names, values = get_update_expression_attributes(python_type_to_dynamodb_type(update_attribute_values))
 
         return self.client.update_item(
             TableName=table_name,
