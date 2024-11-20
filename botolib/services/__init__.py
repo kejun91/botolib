@@ -17,6 +17,13 @@ class AWSService(ABC):
         
         self.client = session.client(sn) if session is not None else boto3.client(sn)
 
+    def __getattr__(self, name):
+        if hasattr(self.client, name):
+            return getattr(self.client, name)
+        else:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+
     def _get_all_with_callback(self, get_list_function, result_token_name, next_token_name, callback_function, *args, next_token = None):
         results = []
         next_token = next_token

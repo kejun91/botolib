@@ -17,3 +17,9 @@ class S3(AWSService):
 
     def download_file(self, bucket_name, key, file_obj):
         self.client.download_fileobj(bucket_name,key,file_obj)
+
+    def get_object(self, s3_path:str) -> bytes:
+        parts = s3_path.removeprefix('/').split('/',1)
+        bucket_name = parts[0]
+        key_name = parts[1] if len(parts) > 1 else ""
+        return self.client.get_object(Bucket=bucket_name, Key=key_name)
