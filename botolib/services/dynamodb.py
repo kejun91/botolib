@@ -172,7 +172,9 @@ def python_type_to_dynamodb_type(item:dict) -> dict: ...
 def python_type_to_dynamodb_type(items:list) -> list: ...
 
 def python_type_to_dynamodb_type(arg:Union[dict, list]) -> Union[dict, list]:
-    if isinstance(arg, dict):
+    if arg is None:
+        return arg
+    elif isinstance(arg, dict):
         dynamodb_item = {}
         serializer = TypeSerializer()
         for k,v in arg.items():
@@ -192,7 +194,9 @@ def dynamodb_type_to_python_type(item:dict) -> dict: ...
 def dynamodb_type_to_python_type(items:list) -> list: ...
 
 def dynamodb_type_to_python_type(arg:Union[dict,list]) -> Union[dict,list]:
-    if isinstance(arg, dict):
+    if arg is None:
+        return arg
+    elif isinstance(arg, dict):
         deserializer = TypeDeserializer()
         python_item = {}
         deserializer = TypeDeserializer()
