@@ -26,3 +26,10 @@ class SSO(AWSService):
     
     def list_account_roles_with_paginator(self, access_token, account_id):
         return self.get_result_from_paginator('list_account_roles', 'roleList', accessToken=access_token, accountId=account_id)
+    
+    def get_role_credentials(self, role_name, account_id, sso_access_token):
+        return self.client.get_role_credentials(
+            roleName=role_name,
+            accountId=account_id,
+            accessToken=sso_access_token
+        ).get('roleCredentials')
