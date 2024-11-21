@@ -11,6 +11,7 @@ from .services.resourcegroupstaggpingapi import ResourceGroupsTaggingAPI
 from .services.s3 import S3
 from .services.secretsmanager import SecretsManager
 from .services.sns import SNS
+from .services.ssm import SSM
 from .services.sqs import SQS
 from .services.sso import SSO
 from .services.ssooidc import SSO_OIDC

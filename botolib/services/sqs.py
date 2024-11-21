@@ -44,3 +44,9 @@ class SQS(AWSService):
             MessageBody = message_body,
             MessageAttributes = message_attributes
         )
+    
+    def delete_message(self, queue_url, receipt_handle):
+        return self.client.delete_message(
+            QueueUrl=queue_url,
+            ReceiptHandle=receipt_handle
+        )
