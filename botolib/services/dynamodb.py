@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Union, overload
 from . import AWSService
 from ..utils.common import remove_none_values
@@ -178,6 +179,8 @@ def python_type_to_dynamodb_type(arg:Union[dict, list]) -> Union[dict, list]:
         dynamodb_item = {}
         serializer = TypeSerializer()
         for k,v in arg.items():
+            if isinstance(v, datetime):
+                v = v.timestamp()
             if isinstance(v, float):
                 v = Decimal(str(v))
             dynamodb_item[k] = serializer.serialize(v)
