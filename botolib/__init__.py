@@ -6,6 +6,7 @@ from .services.cloudwatchlogs import CloudWatchLogs
 from .services.dynamodb import DynamoDB
 from .services.eventbridge import EventBridge
 from .services.iot import IoT
+from .services.iam import IAM
 from .services.lambda_aws import Lambda
 from .services.resourcegroupstaggpingapi import ResourceGroupsTaggingAPI
 from .services.s3 import S3
