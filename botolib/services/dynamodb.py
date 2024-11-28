@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import Union, overload
+from ..utils.chunk import chunk_dict
+from ..utils.retry import ExponentialBackoffRetry
 from . import AWSService
 from ..utils.common import remove_none_values
 from decimal import Decimal
@@ -97,6 +99,54 @@ class DynamoDB(AWSService):
             TableName = table_name,
             Item = python_type_to_dynamodb_type(item)
         )
+    
+    def delete_item(self, table_name, key:dict):
+        self.client.delete_item(
+            TableName = table_name,
+            Key = python_type_to_dynamodb_type(key)
+        )
+
+    def batch_write_item(self, put_items:dict = None, delete_keys:dict = None):
+        requested_items = {}
+        if put_items is not None:
+            for tn, items in put_items.items():
+                if tn not in requested_items:
+                    requested_items[tn] = []
+                
+                for i in items:
+                    requested_items[tn].append({
+                        "PutRequest": {
+                            "Item": python_type_to_dynamodb_type(i)
+                        }
+                    })
+        
+        if delete_keys is not None:
+            for tn, keys in delete_keys.items():
+                if tn not in requested_items:
+                    requested_items[tn] = []
+
+                for k in keys:
+                    requested_items[tn].append({
+                        "DeleteRequest": {
+                            "Key": python_type_to_dynamodb_type(k)
+                        }
+                    })
+
+        if requested_items != {}:
+            #TODO: check bytes of total items for chunk
+            for chunk in chunk_dict(requested_items, 25):
+                self._batch_write_item_with_retry(chunk)
+
+    def _batch_write_item_with_retry(self, request_items):
+        condition_check = lambda req_items: req_items is not None
+        execution_func = lambda req_items: self.client.batch_write_item(RequestItems=req_items).get('UnprocessedItems')
+        ExponentialBackoffRetry().execute(condition_check, execution_func, request_items)
+
+    def batch_delete_items(self, table_name, keys):
+        self.batch_write_item(None, {table_name:keys})
+
+    def batch_put_items(self, table_name, items):
+        self.batch_write_item({table_name:items}, None)
     
     def update_item(self, table_name, key, update_attribute_values):
         update_expressions, names, values = get_update_expression_attributes(python_type_to_dynamodb_type(update_attribute_values))
