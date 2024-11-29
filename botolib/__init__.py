@@ -3,7 +3,7 @@ from .services.apigatewayv2 import APIGatewayV2
 from .services.cloudformation import CloudFormation
 from .services.cloudwatch import CloudWatch
 from .services.cloudwatchlogs import CloudWatchLogs
-from .services.dynamodb import DynamoDB
+from .services.dynamodb import DynamoDB, dynamodb_type_to_python_type, python_type_to_dynamodb_type
 from .services.eventbridge import EventBridge
 from .services.iot import IoT
 from .services.iam import IAM
