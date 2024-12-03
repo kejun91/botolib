@@ -147,33 +147,70 @@ class DynamoDB(AWSService):
 
     def batch_put_items(self, table_name, items):
         self.batch_write_item({table_name:items}, None)
+
+    def update_item_with_condition(self, table_name, key, condition_expression:ConditionBase, set_attribute_values:dict, remove_attributes:list = None):
+
+        '''
+        Parameters not exposed:
+        ReturnConsumedCapacity
+        ReturnItemCollectionMetrics
+        ReturnValuesOnConditionCheckFailure
+        '''
+
+        update_expression, names, values = get_update_expression_attributes(python_type_to_dynamodb_type(set_attribute_values), remove_attributes)
+
+        if condition_expression is not None:
+            ce_builder = ConditionExpressionBuilder()
+            result = ce_builder.build_expression(condition_expression, False)
+            condition_expression = result.condition_expression
+            names.extend(result.attribute_name_placeholders)
+            values.extend(python_type_to_dynamodb_type(result.attribute_value_placeholders))
+        
+        request_params = remove_none_values({
+            "TableName": table_name,
+            "Key": python_type_to_dynamodb_type(key),
+            "UpdateExpression": update_expression,
+            "ConditionExpression": condition_expression,
+            "ExpressionAttributeNames": names,
+            "ExpressionAttributeValues": values,
+            "ReturnValues":"UPDATED_NEW"
+        })
+
+        return self.client.update_item(**request_params).get("Attributes")
     
-    def update_item(self, table_name, key, update_attribute_values):
-        update_expressions, names, values = get_update_expression_attributes(python_type_to_dynamodb_type(update_attribute_values))
+    def update_item(self, table_name, key, set_attribute_values:dict, remove_attributes:list = None):
+        return self.update_item_with_condition(table_name, key, None, set_attribute_values, remove_attributes)
 
-        return self.client.update_item(
-            TableName=table_name,
-            Key=python_type_to_dynamodb_type(key),
-            UpdateExpression = "SET " + ", ".join(update_expressions),
-            ExpressionAttributeNames = names,
-            ExpressionAttributeValues = values,
-            ReturnValues="UPDATED_NEW"
-        ).get("Attributes")
-
-def get_update_expression_attributes(attribute_values, expression_callback = lambda name, value: f"{name} = {value}"):
+def get_update_expression_attributes(update_attribute_values, remove_attributes, set_expression_callback = lambda name, value: f"{name} = {value}"):
+    update_expression = ''
     i = 0
     expression_attribute_names = {}
     expression_attribute_values = {}
     expressions = []
-    for n, v in attribute_values.items():
-        n_alias = f'#name{i}'
-        v_alias = f':value{i}'
-        i = i + 1
-        expressions.append(expression_callback(n_alias,v_alias))
-        expression_attribute_names.update({n_alias:n})
-        expression_attribute_values.update({v_alias:v})
+    if update_attribute_values is not None:
+        for n, v in update_attribute_values.items():
+            n_alias = f'#name{i}'
+            v_alias = f':value{i}'
+            i = i + 1
+            expressions.append(set_expression_callback(n_alias,v_alias))
+            expression_attribute_names.update({n_alias:n})
+            expression_attribute_values.update({v_alias:v})
+
+        if len(expressions) > 0:
+            update_expression += "SET " + ", ".join(expressions)
+
+    remove_aliases = []
+    if remove_aliases is not None:
+        for r in remove_attributes:
+            n_alias = f'#name{i}'
+            remove_aliases.append(n_alias)
+            i = i + 1
+            expression_attribute_names.update({n_alias:n})
+
+        if len(remove_aliases) > 0:
+            update_expression += "REMOVE " + ", ".join(remove_aliases)
     
-    return expressions, expression_attribute_names, expression_attribute_values
+    return update_expression, expression_attribute_names, expression_attribute_values
     
 def _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, key_condition_expression, filter_expression, selected_attributes):
     kwargs = {
