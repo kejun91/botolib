@@ -7,6 +7,7 @@ from .services.dynamodb import DynamoDB, dynamodb_type_to_python_type, python_ty
 from .services.eventbridge import EventBridge
 from .services.iot import IoT
 from .services.iam import IAM
+from .services.identitystore import IdentityStore
 from .services.lambda_aws import Lambda
 from .services.resourcegroupstaggpingapi import ResourceGroupsTaggingAPI
 from .services.s3 import S3
