@@ -200,12 +200,12 @@ def get_update_expression_attributes(update_attribute_values, remove_attributes,
             update_expression += "SET " + ", ".join(expressions)
 
     remove_aliases = []
-    if remove_aliases is not None:
+    if remove_attributes is not None:
         for r in remove_attributes:
             n_alias = f'#name{i}'
             remove_aliases.append(n_alias)
             i = i + 1
-            expression_attribute_names.update({n_alias:n})
+            expression_attribute_names.update({n_alias:r})
 
         if len(remove_aliases) > 0:
             update_expression += "REMOVE " + ", ".join(remove_aliases)
