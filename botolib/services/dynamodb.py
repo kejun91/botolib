@@ -46,6 +46,17 @@ class DynamoDB(AWSService):
             result['Items'] = dynamodb_type_to_python_type(result['Items'])
         return result
     
+    def query_with_paginator(self, table_name, index_name, key_condition_expression:ConditionBase, select = None, filter_expression:ConditionBase = None, selected_attributes = None, callback_handler = None):
+        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, key_condition_expression, filter_expression, selected_attributes)
+
+        if callback_handler is not None:
+            def convert_and_callback(items):
+                callback_handler(dynamodb_type_to_python_type(items))
+
+            return self.get_result_from_paginator('query', 'Items', convert_and_callback, **kwargs)
+        else:
+            return dynamodb_type_to_python_type(self.get_result_from_paginator('query', 'Items', None, **kwargs))
+    
     def scan(self, table_name, index_name = None, filter_expression:ConditionBase = None, exclusive_start_key = None, limit:int = None, select = None, selected_attributes = None):
         kwargs = _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, None, filter_expression, selected_attributes)
         result = self.client.scan(**kwargs)
