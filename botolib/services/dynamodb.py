@@ -174,8 +174,8 @@ class DynamoDB(AWSService):
             ce_builder = ConditionExpressionBuilder()
             result = ce_builder.build_expression(condition_expression, False)
             condition_expression = result.condition_expression
-            names.extend(result.attribute_name_placeholders)
-            values.extend(python_type_to_dynamodb_type(result.attribute_value_placeholders))
+            names.update(result.attribute_name_placeholders)
+            values.update(python_type_to_dynamodb_type(result.attribute_value_placeholders))
         
         request_params = remove_none_values({
             "TableName": table_name,
