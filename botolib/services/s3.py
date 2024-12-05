@@ -1,3 +1,4 @@
+from typing import Union
 from . import AWSService
 from ..utils.common import remove_none_values
 
@@ -23,7 +24,7 @@ class S3(AWSService):
         response = self.client.get_object(Bucket=bucket_name, Key=key_name)
         return response["Body"].read()
     
-    def put_object(self, s3_path:str, body:bytes|str, content_type:str = "application/json"):
+    def put_object(self, s3_path:str, body:Union[bytes,str], content_type:str = "application/json"):
         bucket_name, key_name = get_bucket_and_key(s3_path)
         if isinstance(body,str):
             body = body.encode('utf-8')
