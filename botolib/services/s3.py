@@ -16,9 +16,6 @@ class S3(AWSService):
     def list_objects_v2_with_paginator(self, bucket:str):
         return self.get_result_from_paginator('list_objects_v2', 'Contents', Bucket = bucket)
 
-    def download_file(self, bucket_name, key, file_obj):
-        self.client.download_fileobj(bucket_name,key,file_obj)
-
     def get_object(self, s3_path:str) -> bytes:
         bucket_name, key_name = get_bucket_and_key(s3_path)
         response = self.client.get_object(Bucket=bucket_name, Key=key_name)
