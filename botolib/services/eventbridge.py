@@ -23,12 +23,3 @@ class EventBridge(AWSService):
 
     def list_targets_by_rule_with_paginator(self, rule):
         return self.get_result_from_paginator('list_targets_by_rule', 'Targets', Rule=rule)
-    
-    def get_rule_describe(self, rule):
-        pass
-
-    def get_event_buses(self):
-        pass
-
-    def get_event_sources(self):
-        pass

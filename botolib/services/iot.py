@@ -21,9 +21,3 @@ class IoT(AWSService):
     
     def get_certificate_describe(self, certificate_id):
         return self.client.describe_certificate(certificateId=certificate_id)
-    
-    def get_logging_options(self):
-        return self.client.get_logging_options()
-    
-    def get_v2_logging_options(self):
-        return self.client.get_v2_logging_options()
