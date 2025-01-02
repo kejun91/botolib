@@ -60,6 +60,14 @@ class AWSService(ABC):
                 callback_func(r)
         else:
             return list(itertools.chain(*self._gen_iterator))
+        
+    def paginate(self, func, **kwargs):
+        if 'PaginationConfig' not in kwargs:
+            kwargs['PaginationConfig'] = {
+                'PageSize': 50
+            }
+        
+        return PageResultIterator(self.client, getattr(func,"operation_name"), kwargs, getattr(func, "result_token"))
     
 class PageResultIterator:
     def __init__(self, client, operation_name, kwargs, result_token):
@@ -69,3 +77,10 @@ class PageResultIterator:
     def __iter__(self):
         for i in self._iterator:
             yield i.get(self._result_token, [])
+
+def paginateable(operation_name, result_token):
+    def decorator(func):
+        setattr(func, "operation_name", operation_name)
+        setattr(func, "result_token", result_token)
+        return func
+    return decorator
