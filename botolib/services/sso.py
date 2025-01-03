@@ -1,27 +1,15 @@
 from . import AWSService, paginateable
-from ..utils.common import remove_none_values
 
 class SSO(AWSService):
     __servicename__ = 'sso'
 
-    @paginateable("list_accounts", "accountList")
+    @paginateable("list_accounts", "accountList","nextToken", ["nextToken"])
     def list_accounts(self, accessToken, nextToken = None):
-        request_params = remove_none_values({
-            'accessToken':accessToken,
-            'nextToken':nextToken
-        })
+        return self.client.list_accounts(**self.get_request_params(locals()))
 
-        return self.client.list_accounts(**request_params)
-
-    @paginateable("list_account_roles", "roleList")
+    @paginateable("list_account_roles", "roleList", "nextToken", ["nextToken"])
     def list_account_roles(self, accessToken, accountId, nextToken = None):
-        request_params = remove_none_values({
-            'accessToken':accessToken,
-            'accountId':accountId,
-            'nextToken':nextToken
-        })
-
-        return self.client.list_account_roles(**request_params)
+        return self.client.list_account_roles(**self.get_request_params(locals()))
     
     def get_role_credentials(self, role_name, account_id, sso_access_token):
         return self.client.get_role_credentials(

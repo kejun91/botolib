@@ -1,5 +1,6 @@
 from abc import ABC
-import itertools
+from functools import wraps
+import inspect
 from boto3.session import Session
 import boto3
 from ..utils.common import remove_none_values
@@ -47,40 +48,60 @@ class AWSService(ABC):
     def _get_all(self, get_list_function, result_token_name, next_token_name, *args):
         return self._get_all_with_callback(get_list_function, result_token_name, next_token_name, None, *args)
     
-    def get_result_from_paginator(self, operation_name, result_token, callback_func = None, **kwargs):
-        if 'PaginationConfig' not in kwargs:
-            kwargs['PaginationConfig'] = {
-                'PageSize': 50
-            }
+    def get_request_params(self, locals):
+        request_params = remove_none_values({k: v for k, v in locals.items() if k != 'self'})
+        return request_params
 
-        self._gen_iterator = PageResultIterator(self.client, operation_name, kwargs, result_token)
-
-        if callback_func is not None:
-            for r in self._gen_iterator:
-                callback_func(r)
-        else:
-            return list(itertools.chain(*self._gen_iterator))
-        
-    def paginate(self, func, **kwargs):
-        if 'PaginationConfig' not in kwargs:
-            kwargs['PaginationConfig'] = {
-                'PageSize': 50
-            }
-        
-        return PageResultIterator(self.client, getattr(func,"operation_name"), kwargs, getattr(func, "result_token"))
-    
-class PageResultIterator:
-    def __init__(self, client, operation_name, kwargs, result_token):
-        self._iterator = client.get_paginator(operation_name).paginate(**remove_none_values(kwargs))
+class CustomPaginationIterator:
+    def __init__(self, initial_result, iterator, result_token):
+        self._initial_result = initial_result
+        self._iterator = iterator
         self._result_token = result_token
     
     def __iter__(self):
+        yield self._initial_result.get(self._result_token, [])
         for i in self._iterator:
             yield i.get(self._result_token, [])
 
-def paginateable(operation_name, result_token):
+class ResultWithPagination:
+    def __init__(self, initial_result, client, operation_name, result_token, next_token_key, kwargs):
+        self._initial_result = initial_result
+        self._paginator = client.get_paginator(operation_name)
+        self._result_token = result_token
+        self._kwargs = kwargs
+        self._pagination_start_token = None if initial_result is None else initial_result.get(next_token_key)
+
+    def __getattr__(self, name):
+        return getattr(self._initial_result, name)
+    
+    def paginate(self, pagination_config = None):
+        if self._pagination_start_token is None:
+            result_items = self._initial_result.get(self._result_token)
+            return [result_items] if result_items is not None else []
+    
+        kwargs = self._kwargs or {}
+        kwargs["PaginationConfig"] =  pagination_config or {
+            # 'PageSize': 50
+        }
+        kwargs["PaginationConfig"]["StartingToken"] = self._pagination_start_token
+
+        return CustomPaginationIterator(self._initial_result, self._paginator.paginate(**remove_none_values(kwargs)), self._result_token)
+
+def paginateable(operation_name, result_token, next_token_key, ignore_arguments = []):
     def decorator(func):
-        setattr(func, "operation_name", operation_name)
-        setattr(func, "result_token", result_token)
-        return func
+        arg_names = list(inspect.signature(func).parameters.keys())[1:] # ignore the self
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            args_dict = {}
+
+            for i, arg in enumerate(args[1:]):
+                args_dict[arg_names[i]] = arg
+            args_dict.update(kwargs)
+
+            for ia in ignore_arguments:
+                args_dict.pop(ia, None)
+                
+            result = func(*args, **kwargs)
+            return ResultWithPagination(result, args[0].client, operation_name, result_token, next_token_key, args_dict)
+        return wrapper
     return decorator

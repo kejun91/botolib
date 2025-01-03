@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Union, overload
 from ..utils.chunk import chunk_dict
 from ..utils.retry import ExponentialBackoffRetry
-from . import AWSService
+from . import AWSService, paginateable
 from ..utils.common import remove_none_values
 from decimal import Decimal
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
@@ -46,16 +46,39 @@ class DynamoDB(AWSService):
             result['Items'] = dynamodb_type_to_python_type(result['Items'])
         return result
     
-    def query_with_paginator(self, table_name, index_name, key_condition_expression:ConditionBase, select = None, filter_expression:ConditionBase = None, selected_attributes = None, callback_handler = None):
+    def paginated_query(self, table_name, index_name, key_condition_expression:ConditionBase, select = None, filter_expression:ConditionBase = None, selected_attributes = None):
+        # TableName:str, 
+        # IndexName:str = None, 
+        # Select:str = None, 
+        # ExclusiveStartKey:dict = None, 
+        # ReturnConsumedCapacity:str = None, 
+        # ScanIndexForward:bool = None, 
+        # KeyConditionExpression:str = None, 
+        # ProjectionExpression:str = None, 
+        # FilterExpression:str = None, 
+        # ExpressionAttributeNames:dict = None, 
+        # ExpressionAttributeValues:dict = None, 
+        # ConsistentRead:bool = None, 
+        # Limit = None
         kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, key_condition_expression, filter_expression, selected_attributes)
-
-        if callback_handler is not None:
-            def convert_and_callback(items):
-                callback_handler(dynamodb_type_to_python_type(items))
-
-            return self.get_result_from_paginator('query', 'Items', convert_and_callback, **kwargs)
-        else:
-            return dynamodb_type_to_python_type(self.get_result_from_paginator('query', 'Items', None, **kwargs))
+        return ScanAndQueryPaginator(self.client, 'query', **kwargs)
+    
+    def paginated_scan(self, table_name, index_name = None, filter_expression:ConditionBase = None, select = None, selected_attributes = None):
+        # TableName:str, 
+        # IndexName:str = None, 
+        # Select:str = None, 
+        # ExclusiveStartKey:dict = None, 
+        # ReturnConsumedCapacity:str = None, 
+        # TotalSegments:int = None, 
+        # Segment:int = None, 
+        # ProjectionExpression:str = None, 
+        # FilterExpression:str = None, 
+        # ExpressionAttributeNames:dict = None, 
+        # ExpressionAttributeValues:dict = None, 
+        # ConsistentRead:bool = None, 
+        # Limit = None
+        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, None, filter_expression, selected_attributes)
+        return ScanAndQueryPaginator(self.client, 'scan', **kwargs)
     
     def scan(self, table_name, index_name = None, filter_expression:ConditionBase = None, exclusive_start_key = None, limit:int = None, select = None, selected_attributes = None):
         kwargs = _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, None, filter_expression, selected_attributes)
@@ -64,17 +87,6 @@ class DynamoDB(AWSService):
         if 'Items' in result:
             result['Items'] = dynamodb_type_to_python_type(result['Items'])
         return result
-    
-    def scan_with_paginator(self, table_name, index_name = None, filter_expression:ConditionBase = None, select = None, selected_attributes = None, callback_handler = None):
-        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, None, filter_expression, selected_attributes)
-
-        if callback_handler is not None:
-            def convert_and_callback(items):
-                callback_handler(dynamodb_type_to_python_type(items))
-
-            return self.get_result_from_paginator('scan', 'Items', convert_and_callback, **kwargs)
-        else:
-            return dynamodb_type_to_python_type(self.get_result_from_paginator('scan', 'Items', None, **kwargs))
     
     def execute_partiql_with_custom_paginator(self, partiql_statement, callback_handler = None, next_token = None):
         return self._get_all_with_callback(self.execute_partiql, 'Items', 'NextToken', callback_handler, partiql_statement, next_token = next_token)
@@ -89,21 +101,13 @@ class DynamoDB(AWSService):
             result['Items'] = dynamodb_type_to_python_type(result['Items'])
         return result
     
-    def list_tables(self, last_evaluated_table = None):
-        request_params = remove_none_values({
-            'ExclusiveStartTableName':last_evaluated_table
-        })
-        return self.client.list_tables(**request_params)
-    
     def describe_table(self, table_name):
         res = self.client.describe_table(TableName=table_name)
         return res.get('Table')
     
-    def list_tables_with_paginator(self):
-        '''
-        TableNames, LastEvaluatedTableName, ExclusiveStartTableName
-        '''
-        return self.get_result_from_paginator('list_tables', 'TableNames')
+    @paginateable('list_tables', 'TableNames', 'LastEvaluatedTableName', ["ExclusiveStartTableName", "Limit"])
+    def list_tables(self, ExclusiveStartTableName = None, Limit = None):
+        return self.client.list_tables(**self.get_request_params(locals()))
     
     def put_item(self, table_name, item):
         return self.client.put_item(
@@ -308,3 +312,11 @@ def dynamodb_type_to_python_type(arg:Union[dict,list]) -> Union[dict,list]:
         return [dynamodb_type_to_python_type(item) for item in arg]
     else:
         raise Exception('arg must be dict or list')
+    
+class ScanAndQueryPaginator:
+    def __init__(self, client, operation_name, **kwargs):
+        self._iterable = client.get_paginator(operation_name).paginate(**kwargs)
+    
+    def __iter__(self):
+        for i in self._iterable:
+            yield dynamodb_type_to_python_type(i.get("Items", []))

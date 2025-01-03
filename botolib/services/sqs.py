@@ -1,18 +1,12 @@
-from . import AWSService
-from ..utils.common import remove_none_values
+from . import AWSService, paginateable
 
 
 class SQS(AWSService):
     __servicename__ = 'sqs'
-    
-    def get_queues(self, next_token = None):
-        request_params = remove_none_values({
-            'NextToken':next_token
-        })
-        return self.client.list_queues(**request_params)
 
-    def list_queues_with_paginator(self):
-        return self.get_result_from_paginator('list_queues', 'QueueUrls')
+    @paginateable("list_queues", "QueueUrls", "NextToken", ["NextToken", "MaxResults"])
+    def list_queues(self, QueueNamePrefix = None, NextToken = None, MaxResults = None):
+        return self.client.list_queues(**self.get_request_params(locals()))
     
     def get_queue_attributes(self, queue_url, attribute_names = ['All']):
         response = self.client.get_queue_attributes(QueueUrl=queue_url,AttributeNames=attribute_names)

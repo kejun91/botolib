@@ -1,6 +1,6 @@
 import time
 from typing import Union
-from . import AWSService
+from . import AWSService, paginateable
 from ..utils.common import remove_none_values
 from ..utils.logger import get_logger
 
@@ -9,18 +9,15 @@ logger = get_logger('CloudWatchLogs')
 class CloudWatchLogs(AWSService):
     __servicename__ = 'logs'
 
+    @paginateable("describe_log_groups", "logGroups", "nextToken", ["nextToken", "limit"])
+    def describe_log_groups(self, accountIdentifiers:list = None, logGroupNamePrefix:str = None, logGroupNamePattern:str = None, includeLinkedAccounts:bool = None, logGroupClass:str = None, nextToken:str = None, limit = None):
+        return self.client.describe_log_groups(**self.get_request_params(locals()))
+    
     def get_log_groups(self, next_token = None):
         request_params = remove_none_values({
             'nextToken':next_token
         })
         return self.client.describe_log_groups(**request_params)
-    
-    def describe_log_groups_with_paginator(self):
-        return self.get_result_from_paginator('describe_log_groups', 'logGroups')
-    
-    def query(self, log_group_names:Union[str, list], query_string, start_time, end_time):
-        results, _ = self.query_with_statistics(log_group_names, query_string, start_time, end_time)
-        return results
     
     def query_with_statistics(self, log_group_names:Union[str, list], query_string:str, start_time, end_time):
         if isinstance(log_group_names,str):

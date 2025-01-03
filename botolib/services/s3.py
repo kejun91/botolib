@@ -1,20 +1,13 @@
 from typing import Union
-from . import AWSService
-from ..utils.common import remove_none_values
+from . import AWSService, paginateable
 
 
 class S3(AWSService):
     __servicename__ = 's3'
-    
-    def get_objects_by_bucket_name(self, bucket_name, continuation_token = None):
-        request_params = remove_none_values({
-            "Bucket":bucket_name,
-            'ContinuationToken': continuation_token
-        })
-        return self.client.list_objects_v2(**request_params)
-    
-    def list_objects_v2_with_paginator(self, bucket:str):
-        return self.get_result_from_paginator('list_objects_v2', 'Contents', Bucket = bucket)
+
+    @paginateable("list_objects_v2", "Contents", "ContinuationToken", ["ContinuationToken", "MaxKeys"])
+    def list_objects_v2(self, Bucket, Delimiter:str = None, EncodingType:str = None, MaxKeys:int = None, Prefix:str = None, ContinuationToken:str = None, FetchOwner:bool = None, StartAfter:str = None, RequestPayer:str = None, ExpectedBucketOwner:str = None, OptionalObjectAttributes:list = None):
+        return self.client.list_objects_v2(**self.get_request_params(locals()))
 
     def get_object(self, s3_path:str) -> bytes:
         bucket_name, key_name = get_bucket_and_key(s3_path)

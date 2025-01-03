@@ -1,15 +1,9 @@
-from . import AWSService
-from ..utils.common import remove_none_values
+from . import AWSService, paginateable
 
 
 class APIGatewayV2(AWSService):
     __servicename__ = 'apigatewayv2'
 
-    def get_apis(self, next_token = None):
-        request_params = remove_none_values({
-            'NextToken': next_token
-        })
-        return self.client.get_apis(**request_params)
-    
-    def get_apis_with_paginator(self):
-        return self.get_result_from_paginator('get_apis', 'Items')
+    @paginateable('get_apis', 'Items', 'NextToken', ['NextToken', "MaxResults"])
+    def get_apis(self, NextToken = None, MaxResults = None):
+        return self.client.get_apis(**self.get_request_params(locals()))

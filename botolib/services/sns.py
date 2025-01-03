@@ -1,21 +1,16 @@
 import json
 from typing import Dict, Union
-from . import AWSService
+from . import AWSService, paginateable
 from ..utils.common import remove_none_values
 
 
 class SNS(AWSService):
     __servicename__ = 'sns'
 
-    def get_topics(self, next_token = None):
-        request_params = remove_none_values({
-            'NextToken':next_token
-        })
-        return self.client.list_topics(**request_params)
-    
-    def list_topics_with_paginator(self):
-        return self.get_result_from_paginator('list_topics', 'Topics')
-    
+    @paginateable("list_topics", "Topics", "NextToken", ["NextToken"])
+    def list_topics(self, NextToken = None):
+        return self.client.list_topics(**self.get_request_params(locals()))
+
     def get_topic_attributes(self, topic_arn):
         response = self.client.get_topic_attributes(TopicArn=topic_arn)
         return response.get('Attributes')
