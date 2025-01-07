@@ -46,7 +46,7 @@ class DynamoDB(AWSService):
             result['Items'] = dynamodb_type_to_python_type(result['Items'])
         return result
     
-    def paginated_query(self, table_name, index_name, key_condition_expression:ConditionBase, select = None, filter_expression:ConditionBase = None, selected_attributes = None):
+    def paginated_query(self, table_name, index_name, key_condition_expression:ConditionBase, scan_index_forward:bool = None, select = None, filter_expression:ConditionBase = None, selected_attributes = None):
         # TableName:str, 
         # IndexName:str = None, 
         # Select:str = None, 
@@ -60,7 +60,7 @@ class DynamoDB(AWSService):
         # ExpressionAttributeValues:dict = None, 
         # ConsistentRead:bool = None, 
         # Limit = None
-        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, key_condition_expression, filter_expression, selected_attributes)
+        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, key_condition_expression, scan_index_forward, filter_expression, selected_attributes)
         return ScanAndQueryPaginator(self.client, 'query', **kwargs)
     
     def paginated_scan(self, table_name, index_name = None, filter_expression:ConditionBase = None, select = None, selected_attributes = None):
@@ -77,7 +77,7 @@ class DynamoDB(AWSService):
         # ExpressionAttributeValues:dict = None, 
         # ConsistentRead:bool = None, 
         # Limit = None
-        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, None, filter_expression, selected_attributes)
+        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, None, None, filter_expression, selected_attributes)
         return ScanAndQueryPaginator(self.client, 'scan', **kwargs)
     
     def scan(self, table_name, index_name = None, filter_expression:ConditionBase = None, exclusive_start_key = None, limit:int = None, select = None, selected_attributes = None):
@@ -227,7 +227,7 @@ def get_update_expression_attributes(update_attribute_values, remove_attributes,
     
     return update_expression, expression_attribute_names, expression_attribute_values
     
-def _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, key_condition_expression, filter_expression, selected_attributes):
+def _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, key_condition_expression, scan_index_forward, filter_expression, selected_attributes):
     kwargs = {
         "TableName":table_name,
         "IndexName":index_name,
@@ -235,6 +235,9 @@ def _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, 
         "Select": select,
         "Limit":limit
     }
+
+    if scan_index_forward is not None:
+        kwargs["ScanIndexForward"] = scan_index_forward
 
     ce_builder = ConditionExpressionBuilder()
     expr_attr_names = {}
