@@ -38,14 +38,6 @@ class DynamoDB(AWSService):
             Key=python_type_to_dynamodb_type(primary_key)
         ).get('Item'))
     
-    def query(self, table_name, index_name, key_condition_expression:ConditionBase, select = None, limit = None, exclusive_start_key = None, filter_expression:ConditionBase = None, selected_attributes = None):
-        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, key_condition_expression, filter_expression, selected_attributes)
-        result = self.client.query(**kwargs)
-
-        if 'Items' in result:
-            result['Items'] = dynamodb_type_to_python_type(result['Items'])
-        return result
-    
     def paginated_query(self, table_name, index_name, key_condition_expression:ConditionBase, scan_index_forward:bool = None, select = None, filter_expression:ConditionBase = None, selected_attributes = None):
         # TableName:str, 
         # IndexName:str = None, 
@@ -79,14 +71,6 @@ class DynamoDB(AWSService):
         # Limit = None
         kwargs = _generate_query_or_scan_kwargs(table_name, index_name, None, select, None, None, None, filter_expression, selected_attributes)
         return ScanAndQueryPaginator(self.client, 'scan', **kwargs)
-    
-    def scan(self, table_name, index_name = None, filter_expression:ConditionBase = None, exclusive_start_key = None, limit:int = None, select = None, selected_attributes = None):
-        kwargs = _generate_query_or_scan_kwargs(table_name, index_name, exclusive_start_key, select, limit, None, filter_expression, selected_attributes)
-        result = self.client.scan(**kwargs)
-
-        if 'Items' in result:
-            result['Items'] = dynamodb_type_to_python_type(result['Items'])
-        return result
     
     def execute_partiql_with_custom_paginator(self, partiql_statement, callback_handler = None, next_token = None):
         return self._get_all_with_callback(self.execute_partiql, 'Items', 'NextToken', callback_handler, partiql_statement, next_token = next_token)
