@@ -19,6 +19,10 @@ class CloudWatchLogs(AWSService):
         })
         return self.client.describe_log_groups(**request_params)
     
+    def query(self, log_group_names:Union[str, list], query_string, start_time, end_time):
+        results, _ = self.query_with_statistics(log_group_names, query_string, start_time, end_time)
+        return results
+    
     def query_with_statistics(self, log_group_names:Union[str, list], query_string:str, start_time, end_time):
         if isinstance(log_group_names,str):
             log_group_names = [log_group_names]
