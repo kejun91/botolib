@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="botolib",
-    version="0.0.34",
+    version="0.0.35",
     author="Jun Ke",
     author_email="kejun91@gmail.com",
     description="A boto lib that enhances some aws service clients",

@@ -12,5 +12,5 @@ class Lambda(AWSService):
     def list_event_source_mappings(self, EventSourceArn:str = None, FunctionName:str = None, Marker = None, MaxItems:int = None):
         return self.client.list_event_source_mappings(**self.get_request_params(locals()))
 
-    def invoke(self, function_name:str):
-        return self.client.invoke(FunctionName=function_name)
+    def invoke(self, function_name:str, payload):
+        return self.client.invoke(FunctionName=function_name, Payload=payload)
