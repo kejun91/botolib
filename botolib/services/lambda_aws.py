@@ -11,3 +11,6 @@ class Lambda(AWSService):
     @paginateable("list_event_source_mappings", "EventSourceMappings", "NextMarker", ["Marker", "MaxItems"])
     def list_event_source_mappings(self, EventSourceArn:str = None, FunctionName:str = None, Marker = None, MaxItems:int = None):
         return self.client.list_event_source_mappings(**self.get_request_params(locals()))
+
+    def invoke(self, function_name:str):
+        return self.client.invoke(FunctionName=function_name)
