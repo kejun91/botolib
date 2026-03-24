@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-03-24)
+
+### Features
+
+- Add ELBv2, Route53, Lambda, EventBridge, DynamoDB, SQS, SNS fetchers with tests
+  ([`5bd4e82`](https://github.com/kejun91/botolib/commit/5bd4e82ab176b1fb03c368d332c3333ce39fdc7a))
+
+
 ## v1.0.0 (2026-03-23)
 
 ### Features
