@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-03-24)
+
+### Features
+
+- Add CloudWatch Logs fetcher with tags support
+  ([`8d096cc`](https://github.com/kejun91/botolib/commit/8d096ccfdbd575c2e956ae9a82a49ece418c22e3))
+
+
 ## v1.1.0 (2026-03-24)
 
 ### Features
