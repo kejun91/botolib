@@ -10,6 +10,9 @@ from .resources.fetchers.apigatewayv2 import (
 from .resources.fetchers.apigatewayv2 import (
     fetch_http_apis as fetch_http_apis,
 )
+from .resources.fetchers.cloudwatch_logs import (
+    fetch_log_groups as fetch_log_groups,
+)
 from .resources.fetchers.dynamodb import (
     fetch_tables as fetch_tables,
 )
@@ -37,6 +40,7 @@ __all__ = [
     "fetch_hosted_zones",
     "fetch_http_apis",
     "fetch_load_balancers",
+    "fetch_log_groups",
     "fetch_queues",
     "fetch_rest_apis",
     "fetch_rules",
